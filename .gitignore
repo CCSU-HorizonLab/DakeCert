@@ -1,0 +1,11 @@
+# 部署期生成的本地状态（勿提交）
+.env
+postgresql/data/
+minio/data/
+redis/data/
+profile/logs/
+profile/tmp/
+profile/file/
+profile/scorePdf/
+profile/img_file/
+profile/sub_file/
