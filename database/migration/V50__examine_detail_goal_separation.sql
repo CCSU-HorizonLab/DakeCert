@@ -27,6 +27,7 @@
 --      ④ 映射不可 JOIN 课程目标 0。
 -- 幂等：可重跑；引用 goal_id 列的语句均带列存在守卫——V51 掉列后的库重放本脚本
 --   只发 NOTICE 跳过（部署器全量重放迁移时的安全前提，2026-11-12 实测修复）。
+--   步骤序敏感：步骤 4（杂交行补映射）必须在步骤 3（删标记行）之后（详见步骤 4 注释）。
 -- 回滚口径（不支持静默跨 V50 回滚）：旧代码只认行上 goal_id，直接回滚会让 V50 后
 --   新增的映射不可见（cal0/1 表观为「漏分配」）。确需回滚时先停用矩阵入口，用
 --   backup_ced_goal_marker_v50 + 映射表手工回填 goal_id，核对后再换旧 jar。
@@ -66,6 +67,7 @@ BEGIN
       WHERE ce.cal_type IN (0, 1)
         AND d.goal_id IS NOT NULL
         AND d.parent_id != 0
+        AND (ce.cal_type = 0 OR p.parent_id != 0)  -- cal1 环节根无格子（gate1 死锚点）不折；cal0 根行映射=合法数据形态
         AND (d.name IS NULL OR d.name = p.name)
         AND NOT EXISTS (SELECT 1 FROM em_teaching_class_score s WHERE s.examine_detail_id = d.id AND s.is_deleted = false)
         AND NOT EXISTS (SELECT 1 FROM em_course_examine_detail_relation_score r WHERE r.examine_detail_id = d.id)
@@ -74,35 +76,6 @@ BEGIN
     $step$;
   ELSE
     RAISE NOTICE 'V50 步骤1：goal_id 列已退役（V51 已执行），折叠跳过';
-  END IF;
-END
-$v50$;
-
--- ── 1.5) 保留的杂交标记行补行自身映射（第29轮审查 P2-2）──
--- 折叠防线只删「无引用」标记行；带成绩/绑定引用者保留为行（如 dake_local 的 30/实训1）。
--- 旧读路径按「子行 goal_id 列」渲染这类行的格子；第29轮起子层格子只认映射——
--- 这里把列值等价迁为行自身映射（键位/锚定/分值与旧渲染逐位一致），随后的清列不丢归属。
--- 仅迁 name 与父行一致的标记形态行；3468/3471 等「真实数据行带死列值」（name≠父行）
--- 旧代码本就不渲染其列值，不在其列，由步骤 4 一并置 NULL。
-DO $v50$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns
-             WHERE table_name = 'em_course_examine_detail' AND column_name = 'goal_id') THEN
-    EXECUTE $step$
-      INSERT INTO em_course_examine_detail_goal (detail_id, goal_id, score)
-      SELECT d.id, d.goal_id, d.score
-      FROM em_course_examine_detail d
-      JOIN em_course_examine ce ON ce.examine_id = d.examine_id
-      JOIN em_course_examine_detail p ON p.id = d.parent_id
-      WHERE ce.cal_type IN (0, 1)
-        AND d.goal_id IS NOT NULL
-        AND d.parent_id != 0
-        AND (d.name IS NULL OR d.name = p.name)
-        AND NOT EXISTS (SELECT 1 FROM em_course_examine_detail_goal g
-                        WHERE g.detail_id = d.id AND g.goal_id = d.goal_id)
-    $step$;
-  ELSE
-    RAISE NOTICE 'V50 步骤1.5：goal_id 列已退役（V51 已执行），补映射跳过';
   END IF;
 END
 $v50$;
@@ -156,6 +129,42 @@ BEGIN
     $step$;
   ELSE
     RAISE NOTICE 'V50 步骤3：goal_id 列已退役（V51 已执行），备份/删除标记行跳过';
+  END IF;
+END
+$v50$;
+
+-- ── 4) 保留的杂交标记行补行自身映射（原步骤 1.5，第29轮审查 P2-2）──
+-- 折叠防线只删「无引用」标记行；带成绩/绑定引用者保留为行（如 dake_local 的 30/实训1）。
+-- 旧读路径按「子行 goal_id 列」渲染这类行的格子；第29轮起子层格子只认映射——
+-- 这里把列值等价迁为行自身映射（键位/锚定/分值与旧渲染逐位一致），随后的清列不丢归属。
+-- 仅迁 name 与父行一致的标记形态行；3468/3471 等「真实数据行带死列值」（name≠父行）
+-- 旧代码本就不渲染其列值，不在其列，由清列前置处置置 NULL。
+-- ⚠ 执行序（2026-11-12 生产实测教训）：本步骤必须在步骤 3 删除标记行**之后**执行——
+--   早期版本排在 3 之前且缺引用过滤，新库首跑时待删的纯标记行同时拿到步骤 1 的父行映射
+--   与本步骤的自身映射，行被删后自身映射全部成孤儿（生产实测 gate3=848）。
+--   现引用过滤（至少一个 score/relation 引用 = 折叠防线保留的行）与后置双保险，
+--   即使单独回放本步骤也不再给待删行建映射。已污染库的清理口径：按 gate3 定义 DELETE。
+DO $v50$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'em_course_examine_detail' AND column_name = 'goal_id') THEN
+    EXECUTE $step$
+      INSERT INTO em_course_examine_detail_goal (detail_id, goal_id, score)
+      SELECT d.id, d.goal_id, d.score
+      FROM em_course_examine_detail d
+      JOIN em_course_examine ce ON ce.examine_id = d.examine_id
+      JOIN em_course_examine_detail p ON p.id = d.parent_id
+      WHERE ce.cal_type IN (0, 1)
+        AND d.goal_id IS NOT NULL
+        AND d.parent_id != 0
+        AND (d.name IS NULL OR d.name = p.name)
+        AND (EXISTS (SELECT 1 FROM em_teaching_class_score s WHERE s.examine_detail_id = d.id AND s.is_deleted = false)
+             OR EXISTS (SELECT 1 FROM em_course_examine_detail_relation_score r WHERE r.examine_detail_id = d.id))
+        AND NOT EXISTS (SELECT 1 FROM em_course_examine_detail_goal g
+                        WHERE g.detail_id = d.id AND g.goal_id = d.goal_id)
+    $step$;
+  ELSE
+    RAISE NOTICE 'V50 步骤4：goal_id 列已退役（V51 已执行），补映射跳过';
   END IF;
 END
 $v50$;
