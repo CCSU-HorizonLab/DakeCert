@@ -1,7 +1,7 @@
 # 达证通（达课）· 一键部署
 
 大学教学质量管理平台：培养方案 → 课程大纲 → 课堂教学 → 考核评价 → 达成度分析 → 持续改进。
-本仓库为一键 Docker 部署（标准版），面向教师个人/课程组开箱即用。当前版本 **v3.5.1**。
+本仓库为一键 Docker 部署（标准版），面向教师个人/课程组开箱即用。当前版本 **v3.5.2**。
 
 ## 功能列表
 
@@ -148,10 +148,10 @@ rm -rf postgresql/data minio/data redis/data
 
 ```bash
 git pull
-docker compose pull && docker compose up -d
+docker compose pull && ./init.sh
 ```
 
-数据库结构变更（如有）参见 `docs/` 下的升级说明。
+`./init.sh` 幂等：除拉起新镜像外，还会自动补跑 `database/migration/` 下尚未生效的数据库结构迁移（迁移前自动停旧应用、迁移后再起新镜像——V51 起含删列等破坏性变更，旧代码对已删列的查询会 500，故统一按「停应用→迁移→起新镜像」编排；停机窗口约 1-2 分钟，请安排在非教学时段）。含结构变更的版本会在 `docs/release-notes/` 下给出升级说明（如 [v3.5.2](docs/release-notes/v3.5.2.md) 含 V49/V50 迁移）。
 
 ## 升级到授权版
 

@@ -3,7 +3,7 @@ name: dake
 # 镜像来自 Docker Hub；如自建镜像仓库，改 .env 的 DOCKER_NAMESPACE/IMAGE_TAG
 services:
   app:
-    image: ${DOCKER_NAMESPACE:-dake}/dake-app:${IMAGE_TAG:-3.5.1}
+    image: ${DOCKER_NAMESPACE:-dake}/dake-app:${IMAGE_TAG:-3.5.2}
     restart: always
     hostname: dake-app
     ports:
@@ -62,7 +62,7 @@ services:
       - dake
 
   teacher-web:
-    image: ${DOCKER_NAMESPACE:-dake}/dake-teacher-web:${IMAGE_TAG:-3.5.1}
+    image: ${DOCKER_NAMESPACE:-dake}/dake-teacher-web:${IMAGE_TAG:-3.5.2}
     restart: always
     hostname: dake-teacher-web
     ports:
@@ -78,7 +78,7 @@ services:
       - dake
 
   student-web:
-    image: ${DOCKER_NAMESPACE:-dake}/dake-student-web:${IMAGE_TAG:-3.5.1}
+    image: ${DOCKER_NAMESPACE:-dake}/dake-student-web:${IMAGE_TAG:-3.5.2}
     restart: always
     hostname: dake-student-web
     ports:

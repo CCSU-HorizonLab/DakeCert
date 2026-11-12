@@ -85,7 +85,20 @@ if [ "$WITH_SEED" = 1 ]; then
   fi
 fi
 
-# ---------------------------------------------------------------- 6. Judge0
+# ---------------------------------------------------------------- 6. 数据库结构迁移
+# database/migration/ 下的脚本幂等可重跑：新装库在种子后补齐，老库（升级）同样补齐到最新。
+# 迁移前先停旧应用（V51 起含破坏性变更：旧镜像实体仍映射被 DROP 的 goal_id 列，
+# 列没了旧应用查询即 500；停机窗口=迁移时长+新应用启动，升级请安排在非教学时段）。
+# 全新安装时应用尚未起过，stop 是无害空操作。
+docker compose stop app >/dev/null 2>&1 || true
+for f in database/migration/*.sql; do
+  [ -e "$f" ] || continue
+  say "应用数据库迁移 $(basename "$f") ..."
+  docker compose exec -T postgresql psql -U "$DB_USERNAME" -d "$DB_NAME" -v ON_ERROR_STOP=1 -q < "$f" \
+    || { echo "迁移失败：$f（docker compose logs postgresql 排查后重试）"; exit 1; }
+done
+
+# ---------------------------------------------------------------- 7. Judge0
 if [ "$WITH_JUDGE0" = 1 ]; then
   if [ "$(stat -fc %T /sys/fs/cgroup/)" = "cgroup2fs" ]; then
     cat <<'EOF'
@@ -102,11 +115,11 @@ EOF
   docker compose --profile judging up -d judge0-redis judge0 judge0-worker
 fi
 
-# ---------------------------------------------------------------- 7. 应用与前端
+# ---------------------------------------------------------------- 8. 应用与前端
 say "启动后端与前端 ..."
 docker compose up -d
 
-# ---------------------------------------------------------------- 8. 等待后端就绪
+# ---------------------------------------------------------------- 9. 等待后端就绪
 say "等待后端启动（首次约 1 分钟）..."
 for i in $(seq 1 90); do
   curl -sf -o /dev/null "http://localhost:${APP_PORT:-10025}/at-user-service/v1/code/initprobe" && break
@@ -116,7 +129,7 @@ curl -sf -o /dev/null "http://localhost:${APP_PORT:-10025}/at-user-service/v1/co
   || { echo "后端未就绪：docker compose logs -t app | tail -100"; exit 1; }
 say "后端就绪"
 
-# ---------------------------------------------------------------- 9. 总结
+# ---------------------------------------------------------------- 10. 总结
 PORT_T=${TEACHER_WEB_PORT:-10026}; PORT_S=${STUDENT_WEB_PORT:-10027}
 cat <<EOF
 
