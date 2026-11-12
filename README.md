@@ -3,6 +3,42 @@
 大学教学质量管理平台：培养方案 → 课程大纲 → 课堂教学 → 考核评价 → 达成度分析 → 持续改进。
 本仓库为一键 Docker 部署（标准版），面向教师个人/课程组开箱即用。当前版本 **v3.5.2**。
 
+![课程大纲三栏工作台](docs/images/syllabus-workbench.png)
+
+## 系统截图
+
+**标准版（开箱即用）**
+
+| 教师端登录 | 教学中心 |
+|---|---|
+| ![登录](docs/images/login.png) | ![教学中心](docs/images/teacher-home.png) |
+
+| 培养方案 · 毕业要求实现矩阵 | 课程大纲 · 三栏工作台 + 实时 Word 预览 |
+|---|---|
+| ![培养方案](docs/images/training-matrix.png) | ![大纲工作台](docs/images/syllabus-workbench.png) |
+
+| 课程大纲 · 考核环节配置 | 课程大纲 · 达成度评价矩阵 |
+|---|---|
+| ![考核环节](docs/images/examine-components.png) | ![达成度矩阵](docs/images/achievement-matrix.png) |
+
+| Word 模板在线编辑器 | 题库管理（六题型） |
+|---|---|
+| ![模板编辑器](docs/images/template-editor.png) | ![题库](docs/images/question-bank.png) |
+
+| 试卷与组卷 | 在线考试 · 学生答题 |
+|---|---|
+| ![组卷](docs/images/paper-compose.png) | ![在线考试](docs/images/exam-answer.png) |
+
+| 代码题在线判题（七语言，逐用例结果） | 成绩统计 |
+|---|---|
+| ![代码判题](docs/images/code-judge.png) | ![成绩统计](docs/images/score-stats.png) |
+
+**授权版 🔒（升级解锁）**
+
+| AI 智能批改 | 课程目标达成情况评价 |
+|---|---|
+| ![AI批改](docs/images/ai-marking.png) | ![达成度评价](docs/images/achievement-report.png) |
+
 ## 功能列表
 
 **教学与考试（标准版全量）**
