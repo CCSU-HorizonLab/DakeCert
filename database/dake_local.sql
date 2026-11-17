@@ -2439,7 +2439,8 @@ CREATE TABLE public.em_teaching_class_assistant (
     create_time timestamp without time zone,
     operator character varying(128),
     update_time timestamp without time zone,
-    is_deleted boolean DEFAULT false NOT NULL
+    is_deleted boolean DEFAULT false NOT NULL,
+    permissions character varying(200)
 );
 
 
@@ -2450,6 +2451,8 @@ ALTER TABLE public.em_teaching_class_assistant OWNER TO postgres;
 --
 
 COMMENT ON TABLE public.em_teaching_class_assistant IS '教学班班级助教配置（派生身份，非角色）：任课老师/课程负责人/管理员直接增删；有任职行=班级助教，撤光即失效';
+
+COMMENT ON COLUMN public.em_teaching_class_assistant.permissions IS '助教权限code集合(逗号分隔,NULL=全部,空串=无)；注册表=dk-api AssistantPermission';
 
 
 --
@@ -2485,6 +2488,7 @@ ALTER SEQUENCE public.em_teaching_class_class_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.em_teaching_class_class_id_seq OWNED BY public.em_teaching_class.class_id;
+
 
 
 --
@@ -92007,10 +92011,6 @@ V43	em_model_config 单默认部分唯一索引（并发 set-default 双默认�
 V40	复合题子题统一主题型编号（child_type 退役）	V40__compound_children_use_main_types.sql	lsyer	2026-10-26 23:40:39.559423
 V46	状态字段硬化：submit=3 漂移行回填降 2 + submit_status/mark_status NOT NULL+CHECK + em_student_test_record 死列 DROP	V46__status_field_hardening.sql	lsyer	2026-10-28 22:10:16.59225
 V47	模型配额总量化：em_user_model_quota 增 used_num 每教师×类型总量回填 + em_user_model 计数/配额列 DROP	V47__model_quota_total.sql	lsyer	2026-10-28 22:10:16.773686
-V49	考试表加 forbid_code_copy 防作弊开关（代码题禁复制粘贴）	V49__exam_forbid_code_copy.sql	lsyer	2026-11-11 20:54:33.25752
-V48	教学班班级助教配置	V48__class_assistant.sql	migration	2026-11-05 22:32:43.462294
-V50	考核明细-课程目标映射表分离（矩阵 toggle 根因修复，标记行折叠）	V50__examine_detail_goal_separation.sql	lsyer	2026-11-12 08:33:04.752195
-V51	退役明细行 goal_id 列（分配事实自 V50 起唯一存映射表，列读点已全退役）	V51__drop_detail_goal_id.sql	lsyer	2026-11-12 15:00:53.792349
 \.
 
 
