@@ -28682,10 +28682,10 @@ COPY public.em_teaching_class (class_id, class_code, class_name, register_year, 
 -- Data for Name: em_teaching_class_assistant; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.em_teaching_class_assistant (id, teaching_class_id, user_id, creator, create_time, operator, update_time, is_deleted) FROM stdin;
-2	34	442	admin	2026-11-06 07:57:45.486	admin	2026-11-06 07:57:45.487	t
-3	34	1	admin	2026-11-06 07:57:45.49	admin	2026-11-06 07:57:45.49	t
-4	34	442	admin	2026-11-06 07:57:45.722	admin	2026-11-06 07:57:45.722	t
+COPY public.em_teaching_class_assistant (id, teaching_class_id, user_id, creator, create_time, operator, update_time, is_deleted, permissions) FROM stdin;
+2	34	442	admin	2026-11-06 07:57:45.486	admin	2026-11-06 07:57:45.487	t	\N
+3	34	1	admin	2026-11-06 07:57:45.49	admin	2026-11-06 07:57:45.49	t	\N
+4	34	442	admin	2026-11-06 07:57:45.722	admin	2026-11-06 07:57:45.722	t	\N
 \.
 
 

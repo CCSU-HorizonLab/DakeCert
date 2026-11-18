@@ -7,3 +7,9 @@
 ALTER TABLE em_teaching_class_assistant ADD COLUMN IF NOT EXISTS permissions varchar(200);
 
 COMMENT ON COLUMN em_teaching_class_assistant.permissions IS '助教权限code集合(逗号分隔,NULL=全部,空串=无)；注册表=dk-api AssistantPermission';
+
+-- 版本登记（幂等）：生产 2026-11-17 已在线执行并手工补记同文描述，此处补齐脚本登记，
+-- 新环境重放时 ON CONFLICT 保证与手工行不冲突
+INSERT INTO sys_schema_version (version, description, script, applied_by)
+VALUES ('V53', '班级助教权限矩阵（permissions 列，脚本补记）', 'V53__assistant_permissions.sql', 'migration')
+ON CONFLICT (version) DO NOTHING;
